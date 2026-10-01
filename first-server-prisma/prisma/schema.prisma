@@ -1,0 +1,24 @@
+// This file replaces the CREATE TABLE you wrote by hand.
+//
+// Describe the table here, run `npx prisma db push`, and Prisma makes the database match.
+// Change something, run it again.
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Same columns as the games table we made with SQL:
+//   id SERIAL PRIMARY KEY, title TEXT, genre TEXT, developer TEXT, rating INTEGER, completed BOOLEAN
+model Game {
+  id        Int      @id @default(autoincrement())
+  title     String
+  genre     String?
+  developer String?
+  rating    Int?
+  completed Boolean  @default(false)
+}
