@@ -11,13 +11,15 @@
   "author": "",
   "license": "ISC",
   "description": "The same first server, talking to the database through Prisma instead of raw SQL.",
+  "comment": "Prisma versions are pinned EXACTLY, not with ^. npm's `latest` tag for the prisma CLI currently points at a v8 release candidate whose commands differ (db push became db update), and `latest` for @prisma/client points at 7.x — so an unpinned install gets a mismatched pair and fails on the first command. The pin also keeps the engine mirror valid, since the engine hash is per version.",
   "dependencies": {
-    "@prisma/client": "^6.2.1",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
     "dotenv": "^18.0.4",
     "express": "^5.2.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
-    "prisma": "^6.2.1"
+    "prisma": "7.10.0"
   }
 }

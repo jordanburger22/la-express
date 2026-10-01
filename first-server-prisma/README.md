@@ -13,7 +13,38 @@ line of each route is different.
 2. Get a database: **SIMdb → New database → SQL · Postgres → Connect → Show**.
    Paste the string into `.env` after `DATABASE_URL=`.
 3. `npx prisma db push` — makes the database match `prisma/schema.prisma`.
-4. `npm run dev`
+4. `npx prisma generate` — writes the client your code imports.
+5. `npm run dev`
+
+Step 4 is easy to skip and the error does not point at it: you get
+`Cannot find module '.prisma/client/default'`. Run it again after every change to
+`prisma/schema.prisma`.
+
+### If your network blocks downloads
+
+Prisma fetches a helper program the first time you run `db push` or `generate`, from a host that
+some school and training-centre networks block. You will see a **403** on a file ending in
+`.sha256`, which looks like a corrupt download and is not one. We keep a copy, so set this once:
+
+```bash
+# macOS / Linux
+export PRISMA_ENGINES_MIRROR=https://simplycodingcourses.com/prisma-engines
+```
+```powershell
+# Windows PowerShell
+$env:PRISMA_ENGINES_MIRROR="https://simplycodingcourses.com/prisma-engines"
+```
+
+No trailing slash. Nothing else changes. Once it has downloaded, it is cached and you do not need
+the mirror again on that machine.
+
+### Why the versions are pinned
+
+`package.json` pins Prisma to an exact version rather than `^7.10.0`, and that is deliberate.
+Right now `npm install prisma` on its own installs a **v8 release candidate**, while
+`npm install @prisma/client` installs v7 — a mismatched pair, where the first command you type
+fails because v8 renamed `db push` to `db update`. `npm install` in this folder gets the versions
+this project was written for.
 
 Then the same requests as before:
 
@@ -38,11 +69,29 @@ curl -X DELETE localhost:3001/games/1
 | `DELETE FROM games WHERE id = $1 RETURNING *` | `prisma.game.delete({ where })` |
 | `CREATE TABLE games (…)` at the bottom of the router | `prisma/schema.prisma` + `npx prisma db push` |
 | `db.js` with a `query()` helper over HTTPS | `prisma.js` with one client |
+| `new Pool({ connectionString, max: 3 })` | the same `Pool`, handed to Prisma as an *adapter* |
+
+That last row is worth a second look. Prisma does not have its own way of reaching Postgres — it
+uses the **same `pg` driver** you used to write SQL by hand, and sits on top of it. That is why
+both versions of this project configure the connection the same way, and why `max: 3` appears in
+both.
 
 The SQL has not gone anywhere — Prisma writes it. If you want to see it, add
 `new PrismaClient({ log: ['query'] })` in `prisma.js` and watch the terminal.
 
-## Four things that will catch you
+## Six things that will catch you
+
+**"permission denied for schema public".** Your tables live in your own schema, not in `public`,
+and you have no rights to `public` at all — that is what keeps your database yours. `prisma db push`
+reads the schema name out of `?schema=` in your connection string, but **the client does not**, so
+`prisma.js` passes it separately. If you ever build a `PrismaClient` somewhere else, it needs the
+same treatment, or every query fails with that message while the right schema sits in plain sight
+in your `.env`.
+
+**`max: 3` has to be in the code.** Your project allows three connections at once. The
+`connection_limit=3` in your connection string was a setting for an older part of Prisma and is
+**ignored** now — with it left off, the driver quietly tries to open ten and most of your queries
+die with `too many connections for role`. It is set in `prisma.js`; leave it there.
 
 **"Not found" is an error, not `null`.** `findUnique` gives back `null` when nothing matches, so
 `GET /:id` checks `if (!game)` like before. `update` and `delete` throw instead, with

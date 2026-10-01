@@ -2,10 +2,13 @@
 //
 // Describe the table here, run `npx prisma db push`, and Prisma makes the database match.
 // Change something, run it again.
+//
+// There is no url in here. From Prisma 7 the connection string lives in prisma.config.js instead,
+// so this file is only ever about the shape of your data. If you find an older tutorial with
+// `url = env("DATABASE_URL")` in this block, that is why it does not work.
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 generator client {
